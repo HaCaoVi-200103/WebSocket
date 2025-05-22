@@ -14,6 +14,12 @@ const io = new socket_io_1.Server(server, {
         methods: ["GET", "POST"],
     },
 });
+app.use(express_1.default.json());
+app.post("/notify", (req, res) => {
+    const { userId, action } = req.body;
+    io.to(userId).emit("user-action", action);
+    res.sendStatus(200);
+});
 io.on("connection", (socket) => {
     console.log("User connected", socket.id);
     socket.on("register", (userId) => {

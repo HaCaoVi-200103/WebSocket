@@ -17,6 +17,9 @@ const io = new socket_io_1.Server(server, {
 app.use(express_1.default.json());
 app.post("/notify", (req, res) => {
     const { userId, action } = req.body;
+    if (!userId || !action) {
+        res.sendStatus(200);
+    }
     io.to(userId).emit("user-action", action);
     res.sendStatus(200);
 });
@@ -25,9 +28,6 @@ io.on("connection", (socket) => {
     socket.on("register", (userId) => {
         socket.join(userId);
         console.log(`User ${userId} joined `);
-    });
-    socket.on("send-to-user", ({ userId, action }) => {
-        io.to(userId).emit("user-action", action);
     });
     socket.on("disconnect", () => {
         console.log("User disconnected", socket.id);

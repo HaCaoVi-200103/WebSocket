@@ -1,31 +1,32 @@
-import express from 'express';
-import { createServer } from 'http';
-import { WebSocketServer } from 'ws';
+import { Server } from "socket.io";
+import express from "express";
+import http from "http";
 
 const app = express();
-const server = createServer(app);
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: "*",
+    },
+});
 
-// Tạo WebSocket server
-const wss = new WebSocketServer({ server });
+io.on("connection", (socket) => {
+    console.log("User connected", socket.id);
 
-wss.on('connection', (ws: any) => {
-    console.log('Client connected');
-
-    ws.on('message', (message: any) => {
-        console.log(`Received: ${message}`);
-        ws.send(`You said: ${message}`);
+    socket.on("register", (userId: string) => {
+        socket.join(userId);
+        console.log(`User ${userId} joined `);
     });
 
-    ws.on('close', () => {
-        console.log('Client disconnected');
+    socket.on("send-to-user", ({ userId, action }) => {
+        io.to(userId).emit("user-action", action);
+    });
+
+    socket.on("disconnect", () => {
+        console.log("User disconnected", socket.id);
     });
 });
 
-app.get('/', (_req, res) => {
-    res.send('WebSocket server is running');
-});
-
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`Server listening on http://localhost:${PORT}`);
+server.listen(3000, () => {
+    console.log("WebSocket server listening on port 3000");
 });

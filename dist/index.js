@@ -3,27 +3,29 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+const socket_io_1 = require("socket.io");
 const express_1 = __importDefault(require("express"));
-const http_1 = require("http");
-const ws_1 = require("ws");
+const http_1 = __importDefault(require("http"));
 const app = (0, express_1.default)();
-const server = (0, http_1.createServer)(app);
-// Tạo WebSocket server
-const wss = new ws_1.WebSocketServer({ server });
-wss.on('connection', (ws) => {
-    console.log('Client connected');
-    ws.on('message', (message) => {
-        console.log(`Received: ${message}`);
-        ws.send(`You said: ${message}`);
+const server = http_1.default.createServer(app);
+const io = new socket_io_1.Server(server, {
+    cors: {
+        origin: "*",
+    },
+});
+io.on("connection", (socket) => {
+    console.log("User connected", socket.id);
+    socket.on("register", (userId) => {
+        socket.join(userId);
+        console.log(`User ${userId} joined `);
     });
-    ws.on('close', () => {
-        console.log('Client disconnected');
+    socket.on("send-to-user", ({ userId, action }) => {
+        io.to(userId).emit("user-action", action);
+    });
+    socket.on("disconnect", () => {
+        console.log("User disconnected", socket.id);
     });
 });
-app.get('/', (_req, res) => {
-    res.send('WebSocket server is running');
-});
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`Server listening on http://localhost:${PORT}`);
+server.listen(3000, () => {
+    console.log("WebSocket server listening on port 3000");
 });

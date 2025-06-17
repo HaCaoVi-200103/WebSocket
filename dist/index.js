@@ -1,4 +1,13 @@
 "use strict";
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
@@ -6,6 +15,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const socket_io_1 = require("socket.io");
 const express_1 = __importDefault(require("express"));
 const http_1 = __importDefault(require("http"));
+const axios_1 = __importDefault(require("axios"));
+require("dotenv/config");
 const app = (0, express_1.default)();
 const server = http_1.default.createServer(app);
 const io = new socket_io_1.Server(server, {
@@ -18,7 +29,7 @@ app.use(express_1.default.json());
 app.post("/notify", (req, res) => {
     const { userId, action } = req.body;
     if (!userId || !action) {
-        res.sendStatus(200);
+        return res.sendStatus(200);
     }
     io.to(userId).emit("user-action", action);
     res.sendStatus(200);
@@ -29,6 +40,23 @@ io.on("connection", (socket) => {
         socket.join(userId);
         console.log(`User ${userId} joined `);
     });
+    socket.on("private-message", (data) => __awaiter(void 0, void 0, void 0, function* () {
+        const { senderId, receiverId, content, fileUrl, type } = data;
+        try {
+            const response = yield axios_1.default.post(`${process.env.API_SEND_MESSAGE}`, {
+                senderId,
+                receiverId,
+                content,
+                fileUrl,
+                type,
+            });
+            const savedMessage = response.data;
+            io.to(receiverId).emit("receive-message", savedMessage);
+        }
+        catch (err) {
+            console.error("Lỗi khi gửi API:", err);
+        }
+    }));
     socket.on("disconnect", () => {
         console.log("User disconnected", socket.id);
     });

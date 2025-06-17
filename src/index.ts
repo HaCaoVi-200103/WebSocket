@@ -1,7 +1,8 @@
 import { Server } from "socket.io";
 import express from "express";
 import http from "http";
-
+import axios from "axios";
+import "dotenv/config"
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -17,7 +18,7 @@ app.post("/notify", (req, res) => {
     const { userId, action } = req.body;
 
     if (!userId || !action) {
-        res.sendStatus(200);
+        return res.sendStatus(200);
     }
 
     io.to(userId).emit("user-action", action);
@@ -32,6 +33,25 @@ io.on("connection", (socket) => {
         console.log(`User ${userId} joined `);
     });
 
+    socket.on("private-message", async (data) => {
+        const { senderId, receiverId, content, fileUrl, type } = data;
+
+        try {
+            const response = await axios.post(`${process.env.API_SEND_MESSAGE}`, {
+                senderId,
+                receiverId,
+                content,
+                fileUrl,
+                type,
+            });
+
+            const savedMessage = response.data;
+
+            io.to(receiverId).emit("receive-message", savedMessage);
+        } catch (err) {
+            console.error("Lỗi khi gửi API:", err);
+        }
+    })
     socket.on("disconnect", () => {
         console.log("User disconnected", socket.id);
     });

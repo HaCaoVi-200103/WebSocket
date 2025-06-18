@@ -34,29 +34,33 @@ app.post("/notify", (req, res) => {
     io.to(userId).emit("user-action", action);
     res.sendStatus(200);
 });
+app.post("/private-message", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    const { senderId, receiverId, content, fileUrl, type } = req.body;
+    try {
+        if (!senderId || !receiverId || !content || !fileUrl || !type) {
+            return res.sendStatus(200);
+        }
+        const response = yield axios_1.default.post(`${process.env.API_SEND_MESSAGE}`, {
+            senderId,
+            receiverId,
+            content,
+            fileUrl,
+            type,
+        });
+        const savedMessage = response.data;
+        io.to(receiverId).emit("receive-message", savedMessage);
+        return res.sendStatus(200);
+    }
+    catch (err) {
+        console.error("Lỗi khi gửi API:", err);
+    }
+}));
 io.on("connection", (socket) => {
     console.log("User connected", socket.id);
     socket.on("register", (userId) => {
         socket.join(userId);
         console.log(`User ${userId} joined `);
     });
-    socket.on("private-message", (data) => __awaiter(void 0, void 0, void 0, function* () {
-        const { senderId, receiverId, content, fileUrl, type } = data;
-        try {
-            const response = yield axios_1.default.post(`${process.env.API_SEND_MESSAGE}`, {
-                senderId,
-                receiverId,
-                content,
-                fileUrl,
-                type,
-            });
-            const savedMessage = response.data;
-            io.to(receiverId).emit("receive-message", savedMessage);
-        }
-        catch (err) {
-            console.error("Lỗi khi gửi API:", err);
-        }
-    }));
     socket.on("disconnect", () => {
         console.log("User disconnected", socket.id);
     });

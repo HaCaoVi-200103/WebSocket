@@ -23,6 +23,7 @@ const io = new socket_io_1.Server(server, {
     cors: {
         origin: [process.env.FE_ORIGIN_URL, process.env.BE_ORIGIN_URL],
         methods: ["GET", "POST"],
+        credentials: true,
     },
 });
 app.use(express_1.default.json());

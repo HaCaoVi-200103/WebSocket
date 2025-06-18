@@ -7,7 +7,7 @@ const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: [process.env.FE_ORIGIN_URL!, process.env.WEBSOCKET_URL!],
+        origin: [process.env.FE_ORIGIN_URL!, process.env.BE_ORIGIN_URL!],
         methods: ["GET", "POST"],
     },
 });

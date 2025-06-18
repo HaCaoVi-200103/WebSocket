@@ -56,6 +56,27 @@ io.on("connection", (socket) => {
         console.log(`User ${userId} joined `);
     });
 
+    socket.on("private-message", async (data) => {
+        const { senderId, receiverId, content, fileUrl, type } = data;
+        console.log("private-message>>>>> pending");
+
+        try {
+            const response = await axios.post(`${process.env.API_SEND_MESSAGE}`, {
+                senderId,
+                receiverId,
+                content,
+                fileUrl,
+                type,
+            });
+
+            const savedMessage = response.data;
+            console.log("private-message>>>>> done");
+
+            io.to(receiverId).emit("receive-message", savedMessage);
+        } catch (err) {
+            console.error("Lỗi khi gửi API:", err);
+        }
+    })
     socket.on("disconnect", () => {
         console.log("User disconnected", socket.id);
     });

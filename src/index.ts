@@ -27,29 +27,6 @@ app.post("/notify", (req, res) => {
     res.sendStatus(200);
 });
 
-app.post("/private-message", async (req, res) => {
-    const { senderId, receiverId, content, fileUrl, type } = req.body;
-    try {
-        if (!senderId || !receiverId || !content || !fileUrl || !type) {
-            return res.sendStatus(200);
-        }
-        const response = await axios.post(`${process.env.API_SEND_MESSAGE}`, {
-            senderId,
-            receiverId,
-            content,
-            fileUrl,
-            type,
-        });
-
-        const savedMessage = response.data;
-
-        io.to(receiverId).emit("receive-message", savedMessage);
-        return res.sendStatus(200);
-    } catch (err) {
-        console.error("Lỗi khi gửi API:", err);
-    }
-});
-
 io.on("connection", (socket) => {
     console.log("User connected", socket.id);
 

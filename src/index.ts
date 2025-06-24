@@ -37,25 +37,19 @@ io.on("connection", (socket) => {
 
     socket.on("private-message", async (data) => {
         const { sender, recipient, content, fileUrl, type } = data;
-        const senderId = typeof sender === "string" ? sender : sender._id;
-        const receiverId = typeof recipient === "string" ? recipient : recipient._id;
-        console.log("private-message>>>>> pending");
-        console.log("check data>>>", data);
-
         try {
             const response = await axios.post(`${process.env.API_SEND_MESSAGE}`, {
-                senderId,
-                receiverId,
+                senderId: sender,
+                receiverId: recipient,
                 content,
                 fileUrl,
                 type,
             });
 
             const savedMessage = response.data;
-            console.log("private-message>>>>> done");
 
-            io.to(sender._id).emit("receive-message", savedMessage);
-            io.to(receiverId).emit("receive-message", savedMessage);
+            io.to(sender).emit("receive-message", savedMessage);
+            io.to(recipient).emit("receive-message", savedMessage);
         } catch (err) {
             console.error("Lỗi khi gửi API:", err);
         }

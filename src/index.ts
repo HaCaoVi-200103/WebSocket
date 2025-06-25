@@ -3,6 +3,7 @@ import express from "express";
 import http from "http";
 import axios from "axios";
 import "dotenv/config"
+import { group } from "console";
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -38,7 +39,7 @@ io.on("connection", (socket) => {
     socket.on("private-message", async (data) => {
         const { sender, recipient, content, fileUrl, type } = data;
         try {
-            const response = await axios.post(`${process.env.API_SEND_MESSAGE}`, {
+            const response = await axios.post(`${process.env.API_BE_KEY}/social/send-private-message`, {
                 senderId: sender,
                 receiverId: recipient,
                 content,
@@ -50,6 +51,29 @@ io.on("connection", (socket) => {
 
             io.to(sender).emit("receive-message", savedMessage);
             io.to(recipient).emit("receive-message", savedMessage);
+        } catch (err) {
+            console.error("Lỗi khi gửi API:", err);
+        }
+    })
+
+    socket.on("group-message", async (data) => {
+        const { sender, channelId, content, fileUrl, type, listMember } = data;
+        try {
+            const response = await axios.post(`${process.env.API_BE_KEY}/social/send-group-message`, {
+                senderId: sender,
+                groupId: channelId,
+                content,
+                fileUrl,
+                type,
+            });
+
+            const savedMessage = response.data;
+
+            io.to(sender).emit("receive-group-message", savedMessage);
+            for (const element of listMember) {
+                io.to(element._id).emit("receive-group-message", savedMessage);
+            }
+            // io.to(channelId).emit("receive-group-message", savedMessage);
         } catch (err) {
             console.error("Lỗi khi gửi API:", err);
         }

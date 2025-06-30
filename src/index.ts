@@ -3,7 +3,6 @@ import express from "express";
 import http from "http";
 import axios from "axios";
 import "dotenv/config"
-import { group } from "console";
 const app = express();
 const server = http.createServer(app);
 const io = new Server(server, {
@@ -56,6 +55,21 @@ io.on("connection", (socket) => {
         }
     })
 
+    socket.on("notify-new-friend", async (data) => {
+        const { receiverId, userId } = data;
+        try {
+            const response = await axios.post(`${process.env.API_BE_KEY}/social/send-friend-request`, {
+                receiverId, userId
+            });
+
+            const savedMessage = response.data;
+            io.to(userId).emit("receive-notify-new-friend", savedMessage);
+            io.to(receiverId).emit("receive-notify-new-friend", savedMessage);
+        } catch (err) {
+            console.error("Lỗi khi gửi API:", err);
+        }
+    })
+
     socket.on("group-message", async (data) => {
         const { sender, channelId, content, fileUrl, type, listMember } = data;
         try {
@@ -78,6 +92,22 @@ io.on("connection", (socket) => {
             console.error("Lỗi khi gửi API:", err);
         }
     })
+
+    socket.on("notify-status-friend-request", async (data) => {
+        const { senderId, userId, status } = data;
+        try {
+            const response = await axios.patch(`${process.env.API_BE_KEY}/social/update-status-friend-request`, {
+                senderId, userId, status
+            });
+            const savedMessage = response.data;
+
+            io.to(userId).emit("receive-notify-status-friend-request", savedMessage);
+            io.to(senderId).emit("receive-notify-status-friend-request", savedMessage);
+        } catch (err) {
+            console.error("Lỗi khi gửi API:", err);
+        }
+    })
+
     socket.on("disconnect", () => {
         console.log("User disconnected", socket.id);
     });

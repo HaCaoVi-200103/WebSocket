@@ -83,11 +83,26 @@ io.on("connection", (socket) => {
 
             const savedMessage = response.data;
 
-            io.to(sender).emit("receive-group-message", savedMessage);
-            for (const element of listMember) {
-                io.to(element._id).emit("receive-group-message", savedMessage);
+            for (const member of listMember) {
+                const userId = member._id;
+
+                const res: any = await axios.get(`${process.env.API_BE_KEY}/social/unread-count-message-group/${userId}?groupId=${channelId}`);
+                console.log(res);
+
+                const count = res.data.count ? res.data.count : 0;
+                console.log("userID: ", userId, "::::: count: ", count);
+
+                io.to(userId).emit("receive-group-message", {
+                    ...savedMessage,
+                    count
+                });
             }
-            // io.to(channelId).emit("receive-group-message", savedMessage);
+
+            // Gửi lại cho sender
+            io.to(sender).emit("receive-group-message", {
+                ...savedMessage,
+                count: 0
+            });
         } catch (err) {
             console.error("Lỗi khi gửi API:", err);
         }
@@ -105,6 +120,13 @@ io.on("connection", (socket) => {
             io.to(senderId).emit("receive-notify-status-friend-request", savedMessage);
         } catch (err) {
             console.error("Lỗi khi gửi API:", err);
+        }
+    })
+
+    socket.on("notification-join-group", async (res) => {
+        const { listMember, channelName, channelId, data } = res;
+        for (const e of listMember) {
+            io.to(e).emit("receive-notification-join-group", { channelName, channelId, data });
         }
     })
 

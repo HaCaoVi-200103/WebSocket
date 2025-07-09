@@ -38,7 +38,7 @@ io.on("connection", (socket) => {
     socket.on("private-message", async (data) => {
         const { sender, recipient, content, fileUrl, type } = data;
         try {
-            const response = await axios.post(`${process.env.API_BE_KEY}/social/send-private-message`, {
+            const response = await axios.post(`${process.env.BE_ORIGIN_URL}/social/send-private-message`, {
                 senderId: sender,
                 receiverId: recipient,
                 content,
@@ -58,7 +58,7 @@ io.on("connection", (socket) => {
     socket.on("notify-new-friend", async (data) => {
         const { receiverId, userId } = data;
         try {
-            const response = await axios.post(`${process.env.API_BE_KEY}/social/send-friend-request`, {
+            const response = await axios.post(`${process.env.BE_ORIGIN_URL}/social/send-friend-request`, {
                 receiverId, userId
             });
 
@@ -73,7 +73,7 @@ io.on("connection", (socket) => {
     socket.on("group-message", async (data) => {
         const { sender, channelId, content, fileUrl, type, listMember } = data;
         try {
-            const response = await axios.post(`${process.env.API_BE_KEY}/social/send-group-message`, {
+            const response = await axios.post(`${process.env.BE_ORIGIN_URL}/social/send-group-message`, {
                 senderId: sender,
                 groupId: channelId,
                 content,
@@ -86,7 +86,7 @@ io.on("connection", (socket) => {
             for (const member of listMember) {
                 const userId = member._id;
 
-                const res: any = await axios.get(`${process.env.API_BE_KEY}/social/unread-count-message-group/${userId}?groupId=${channelId}`);
+                const res: any = await axios.get(`${process.env.BE_ORIGIN_URL}/social/unread-count-message-group/${userId}?groupId=${channelId}`);
                 console.log(res);
 
                 const count = res.data.count ? res.data.count : 0;
@@ -111,7 +111,7 @@ io.on("connection", (socket) => {
     socket.on("notify-status-friend-request", async (data) => {
         const { senderId, userId, status } = data;
         try {
-            const response = await axios.patch(`${process.env.API_BE_KEY}/social/update-status-friend-request`, {
+            const response = await axios.patch(`${process.env.BE_ORIGIN_URL}/social/update-status-friend-request`, {
                 senderId, userId, status
             });
             const savedMessage = response.data;

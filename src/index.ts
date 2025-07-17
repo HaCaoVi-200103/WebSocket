@@ -55,6 +55,11 @@ io.on("connection", (socket) => {
         }
     })
 
+    socket.on("notify-cancel-send-request-friend", async (data) => {
+        const { receiverId, userId } = data;
+        io.to(receiverId).emit("receive-notify-cancel-send-request-friend", { receiverId, userId });
+    })
+
     socket.on("notify-new-friend", async (data) => {
         const { receiverId, userId } = data;
         try {
@@ -82,15 +87,17 @@ io.on("connection", (socket) => {
             });
 
             const savedMessage = response.data;
+            console.log("sender>>>", sender);
 
-            for (const member of listMember) {
+            const newList = listMember.filter((x: any) => x._id !== sender)
+
+            for (const member of newList) {
                 const userId = member._id;
+                console.log("listMember>>>", userId);
 
                 const res: any = await axios.get(`${process.env.BE_ORIGIN_URL}/social/unread-count-message-group/${userId}?groupId=${channelId}`);
-                console.log(res);
 
                 const count = res.data.count ? res.data.count : 0;
-                console.log("userID: ", userId, "::::: count: ", count);
 
                 io.to(userId).emit("receive-group-message", {
                     ...savedMessage,
@@ -110,6 +117,8 @@ io.on("connection", (socket) => {
 
     socket.on("notify-status-friend-request", async (data) => {
         const { senderId, userId, status } = data;
+        console.log("check UserId>>>", userId);
+
         try {
             const response = await axios.patch(`${process.env.BE_ORIGIN_URL}/social/update-status-friend-request`, {
                 senderId, userId, status
@@ -124,12 +133,29 @@ io.on("connection", (socket) => {
     })
 
     socket.on("notification-join-group", async (res) => {
-        const { listMember, channelName, channelId, data } = res;
+        const { listMember, channelName, channelId, data, newMemberId, newList } = res;
+        for (const e of newMemberId) {
+            console.log("newMemberId>>>>", e);
+            io.to(e).emit("receive-notification-join-group", { channelName, channelId, data, newList });
+        }
         for (const e of listMember) {
-            io.to(e).emit("receive-notification-join-group", { channelName, channelId, data });
+            console.log("listMember>>>>", e);
+            io.to(e).emit("receive-notification-add-new-member-group", { channelName, channelId, data, newList });
         }
     })
 
+    socket.on("edit-group", async (res) => {
+        const { listMember, channelId, avatar, name } = res;
+        for (const e of listMember) {
+            io.to(e._id).emit("receive-edit-group", { name, channelId, avatar });
+        }
+    })
+    socket.on("delete-group", async (res) => {
+        const { listMember, channelId } = res;
+        for (const e of listMember) {
+            io.to(e._id).emit("receive-delete-group", { channelId });
+        }
+    })
     socket.on("disconnect", () => {
         console.log("User disconnected", socket.id);
     });

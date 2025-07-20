@@ -134,9 +134,11 @@ io.on("connection", (socket) => {
 
     socket.on("notification-join-group", async (res) => {
         const { listMember, channelName, channelId, data, newMemberId, newList } = res;
-        for (const e of newMemberId) {
-            console.log("newMemberId>>>>", e);
-            io.to(e).emit("receive-notification-join-group", { channelName, channelId, data, newList });
+        if (newMemberId && newMemberId.length > 0) {
+            for (const e of newMemberId) {
+                console.log("newMemberId>>>>", e);
+                io.to(e).emit("receive-notification-join-group", { channelName, channelId, data, newList });
+            }
         }
         for (const e of listMember) {
             console.log("listMember>>>>", e);
@@ -151,10 +153,23 @@ io.on("connection", (socket) => {
         }
     })
     socket.on("delete-group", async (res) => {
-        const { listMember, channelId } = res;
+        const { listMember, channelId, channelName } = res;
         for (const e of listMember) {
-            io.to(e._id).emit("receive-delete-group", { channelId });
+            io.to(e._id).emit("receive-delete-group", { channelId, channelName });
         }
+    })
+
+    socket.on("remove-member-from-group", async (res) => {
+        const { groupId, memberId, channelName } = res;
+        io.to(memberId).emit("receive-remove-member-from-group", { groupId, memberId, channelName });
+    })
+
+    socket.on("leave-group", async (res) => {
+        const { groupId, listMember, admin, userId } = res;
+        for (const e of listMember) {
+            io.to(e._id).emit("receive-leave-group", { groupId, listMember, userId });
+        }
+        io.to(admin._id).emit("receive-leave-group", { groupId, listMember, userId });
     })
     socket.on("disconnect", () => {
         console.log("User disconnected", socket.id);

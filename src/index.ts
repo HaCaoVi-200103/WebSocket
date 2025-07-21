@@ -60,6 +60,27 @@ io.on("connection", (socket) => {
         io.to(receiverId).emit("receive-notify-cancel-send-request-friend", { receiverId, userId });
     })
 
+    socket.on("notify-join-group-by-code", async (res) => {
+        const { listMember, channelName, channelId, data, name, avatar, admin } = res;
+        console.log("res>>>>", res);
+
+        for (const e of listMember) {
+            console.log("listMember>>>>", e);
+            io.to(e._id).emit("receive-notify-join-group-by-code", { channelName, channelId, data, name, avatar });
+        }
+        io.to(admin._id).emit("receive-notify-join-group-by-code", { channelName, channelId, data, name, avatar });
+    })
+
+    socket.on("notify-join-group-course-by-code", async (res) => {
+        const { listMember, channelName, channelId, data, name, avatar, admin, newListMember } = res;
+
+        for (const e of listMember) {
+            console.log("listMember>>>>", e);
+            io.to(e._id).emit("receive-notify-join-group-course-by-code", { channelName, channelId, data, name, avatar, newListMember });
+        }
+        io.to(admin._id).emit("receive-notify-join-group-course-by-code", { channelName, channelId, data, name, avatar, newListMember });
+    })
+
     socket.on("notify-new-friend", async (data) => {
         const { receiverId, userId } = data;
         try {

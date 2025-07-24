@@ -138,7 +138,6 @@ io.on("connection", (socket) => {
 
     socket.on("notify-status-friend-request", async (data) => {
         const { senderId, userId, status } = data;
-        console.log("check UserId>>>", userId);
 
         try {
             const response = await axios.patch(`${process.env.BE_ORIGIN_URL}/social/update-status-friend-request`, {
@@ -146,7 +145,7 @@ io.on("connection", (socket) => {
             });
             const savedMessage = response.data;
 
-            io.to(userId).emit("receive-notify-status-friend-request", savedMessage);
+            // io.to(userId).emit("receive-notify-status-friend-request", savedMessage);
             io.to(senderId).emit("receive-notify-status-friend-request", savedMessage);
         } catch (err) {
             console.error("Lỗi khi gửi API:", err);

@@ -13,17 +13,15 @@ const io = new Server(server, {
     },
 });
 
-
 app.use(express.json());
 
 app.post("/notify", (req, res) => {
     const { userId, action } = req.body;
-
     if (!userId || !action) {
         return res.sendStatus(200);
     }
 
-    io.to(userId).emit("user-action", action);
+    io.to(userId).emit("receive-deposit-action", action);
     res.sendStatus(200);
 });
 
@@ -35,6 +33,11 @@ io.on("connection", (socket) => {
         console.log(`User ${userId} joined `);
     });
 
+    socket.on("deposit-action", async (data) => {
+        const { userId } = data;
+
+        io.to(userId).emit("receive-deposit-action");
+    })
     socket.on("private-message", async (data) => {
         const { sender, recipient, content, fileUrl, type } = data;
         try {
@@ -53,6 +56,32 @@ io.on("connection", (socket) => {
         } catch (err) {
             console.error("Lỗi khi gửi API:", err);
         }
+    })
+
+    socket.on("notify-cancel-send-request-friend", async (data) => {
+        const { receiverId, userId } = data;
+        io.to(receiverId).emit("receive-notify-cancel-send-request-friend", { receiverId, userId });
+    })
+
+    socket.on("notify-join-group-by-code", async (res) => {
+        const { listMember, channelName, channelId, data, name, avatar, admin } = res;
+        console.log("res>>>>", res);
+
+        for (const e of listMember) {
+            console.log("listMember>>>>", e);
+            io.to(e._id).emit("receive-notify-join-group-by-code", { channelName, channelId, data, name, avatar });
+        }
+        io.to(admin._id).emit("receive-notify-join-group-by-code", { channelName, channelId, data, name, avatar });
+    })
+
+    socket.on("notify-join-group-course-by-code", async (res) => {
+        const { listMember, channelName, channelId, data, name, avatar, admin, newListMember } = res;
+
+        for (const e of listMember) {
+            console.log("listMember>>>>", e);
+            io.to(e._id).emit("receive-notify-join-group-course-by-code", { channelName, channelId, data, name, avatar, newListMember });
+        }
+        io.to(admin._id).emit("receive-notify-join-group-course-by-code", { channelName, channelId, data, name, avatar, newListMember });
     })
 
     socket.on("notify-new-friend", async (data) => {
@@ -82,15 +111,17 @@ io.on("connection", (socket) => {
             });
 
             const savedMessage = response.data;
+            console.log("sender>>>", sender);
 
-            for (const member of listMember) {
+            const newList = listMember.filter((x: any) => x._id !== sender)
+
+            for (const member of newList) {
                 const userId = member._id;
+                console.log("listMember>>>", userId);
 
                 const res: any = await axios.get(`${process.env.BE_ORIGIN_URL}/social/unread-count-message-group/${userId}?groupId=${channelId}`);
-                console.log(res);
 
                 const count = res.data.count ? res.data.count : 0;
-                console.log("userID: ", userId, "::::: count: ", count);
 
                 io.to(userId).emit("receive-group-message", {
                     ...savedMessage,
@@ -110,13 +141,14 @@ io.on("connection", (socket) => {
 
     socket.on("notify-status-friend-request", async (data) => {
         const { senderId, userId, status } = data;
+
         try {
             const response = await axios.patch(`${process.env.BE_ORIGIN_URL}/social/update-status-friend-request`, {
                 senderId, userId, status
             });
             const savedMessage = response.data;
 
-            io.to(userId).emit("receive-notify-status-friend-request", savedMessage);
+            // io.to(userId).emit("receive-notify-status-friend-request", savedMessage);
             io.to(senderId).emit("receive-notify-status-friend-request", savedMessage);
         } catch (err) {
             console.error("Lỗi khi gửi API:", err);
@@ -124,12 +156,44 @@ io.on("connection", (socket) => {
     })
 
     socket.on("notification-join-group", async (res) => {
-        const { listMember, channelName, channelId, data } = res;
+        const { listMember, channelName, channelId, data, newMemberId, newList } = res;
+        if (newMemberId && newMemberId.length > 0) {
+            for (const e of newMemberId) {
+                console.log("newMemberId>>>>", e);
+                io.to(e).emit("receive-notification-join-group", { channelName, channelId, data, newList });
+            }
+        }
         for (const e of listMember) {
-            io.to(e).emit("receive-notification-join-group", { channelName, channelId, data });
+            console.log("listMember>>>>", e);
+            io.to(e).emit("receive-notification-add-new-member-group", { channelName, channelId, data, newList });
         }
     })
 
+    socket.on("edit-group", async (res) => {
+        const { listMember, channelId, avatar, name } = res;
+        for (const e of listMember) {
+            io.to(e._id).emit("receive-edit-group", { name, channelId, avatar });
+        }
+    })
+    socket.on("delete-group", async (res) => {
+        const { listMember, channelId, channelName } = res;
+        for (const e of listMember) {
+            io.to(e._id).emit("receive-delete-group", { channelId, channelName });
+        }
+    })
+
+    socket.on("remove-member-from-group", async (res) => {
+        const { groupId, memberId, channelName } = res;
+        io.to(memberId).emit("receive-remove-member-from-group", { groupId, memberId, channelName });
+    })
+
+    socket.on("leave-group", async (res) => {
+        const { groupId, listMember, admin, userId } = res;
+        for (const e of listMember) {
+            io.to(e._id).emit("receive-leave-group", { groupId, listMember, userId });
+        }
+        io.to(admin._id).emit("receive-leave-group", { groupId, listMember, userId });
+    })
     socket.on("disconnect", () => {
         console.log("User disconnected", socket.id);
     });

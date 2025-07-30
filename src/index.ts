@@ -38,6 +38,12 @@ io.on("connection", (socket) => {
 
         io.to(userId).emit("receive-deposit-action");
     })
+
+    socket.on("withdraw-action", async (data) => {
+        const { userId } = data;
+        io.to(userId).emit("receive-withdraw-action");
+    })
+
     socket.on("private-message", async (data) => {
         const { sender, recipient, content, fileUrl, type } = data;
         try {

@@ -13,17 +13,15 @@ const io = new Server(server, {
     },
 });
 
-
 app.use(express.json());
 
 app.post("/notify", (req, res) => {
     const { userId, action } = req.body;
-
     if (!userId || !action) {
         return res.sendStatus(200);
     }
 
-    io.to(userId).emit("user-action", action);
+    io.to(userId).emit("receive-deposit-action", action);
     res.sendStatus(200);
 });
 
@@ -35,6 +33,11 @@ io.on("connection", (socket) => {
         console.log(`User ${userId} joined `);
     });
 
+    socket.on("deposit-action", async (data) => {
+        const { userId } = data;
+
+        io.to(userId).emit("receive-deposit-action");
+    })
     socket.on("private-message", async (data) => {
         const { sender, recipient, content, fileUrl, type } = data;
         try {

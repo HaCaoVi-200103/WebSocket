@@ -20,8 +20,13 @@ app.post("/notify", (req, res) => {
     if (!userId || !action) {
         return res.sendStatus(200);
     }
-
-    io.to(userId).emit("receive-deposit-action", action);
+    if (action.type === "withdraw-action") {
+        for (const id of userId) {
+            io.to(id).emit("receive-withdraw-action", action);
+        }
+    } else {
+        io.to(userId).emit("receive-deposit-action", action);
+    }
     res.sendStatus(200);
 });
 
@@ -41,6 +46,8 @@ io.on("connection", (socket) => {
 
     socket.on("withdraw-action", async (data) => {
         const { userId } = data;
+        console.log("Socket onnn>>>>>>>>");
+
         io.to(userId).emit("receive-withdraw-action");
     })
 

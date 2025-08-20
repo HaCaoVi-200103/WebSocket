@@ -160,7 +160,6 @@ io.on("connection", (socket) => {
             });
             const savedMessage = response.data;
 
-            // io.to(userId).emit("receive-notify-status-friend-request", savedMessage);
             io.to(senderId).emit("receive-notify-status-friend-request", savedMessage);
         } catch (err) {
             console.error("Lỗi khi gửi API:", err);
@@ -211,6 +210,6 @@ io.on("connection", (socket) => {
     });
 });
 
-server.listen(3000, () => {
-    console.log("WebSocket server listening on port 3000");
+server.listen(process.env.PORT || 3000, () => {
+    console.log(`WebSocket server listening on port ${process.env.PORT || 3000}`);
 });

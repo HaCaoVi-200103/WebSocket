@@ -98,14 +98,14 @@ io.on("connection", (socket) => {
     })
 
     socket.on("notify-new-friend", async (data) => {
-        const { receiverId, senderId } = data;
+        const { receiverId, userId } = data;
         try {
             await axios.post(`${process.env.BE_ORIGIN_URL}/social/send-friend-request`, {
-                receiverId, userId: senderId._id
+                receiverId, userId: userId
             });
 
-            io.to(senderId._id).emit("receive-notify-new-friend", { receiverId, senderId });
-            io.to(receiverId).emit("receive-notify-new-friend", { receiverId, senderId });
+            io.to(userId).emit("receive-notify-new-friend", { receiverId, userId });
+            io.to(receiverId).emit("receive-notify-new-friend", { receiverId, userId });
         } catch (err) {
             console.error("Lỗi khi gửi API:", err);
         }
